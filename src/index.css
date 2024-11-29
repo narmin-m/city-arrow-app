@@ -1,0 +1,21 @@
+/* Remove default body margin and padding */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* Prevent scrolling */
+}
+
+#root {
+  height: 100%; /* Ensure the root div takes the full height of the viewport */
+}
+
+canvas {
+  display: block; /* Prevent extra space below the canvas */
+  width: 100%;
+  height: 100%;
+}
