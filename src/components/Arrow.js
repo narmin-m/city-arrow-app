@@ -8,32 +8,56 @@ const Arrow = () => {
   const { camera } = useThree();
   const gltf = useLoader(GLTFLoader, "/models/arrow.glb");
 
-  // Define start and end positions for the street in your city model
-  const streetStartZ = -400; // Start of the street
-  const streetEndZ = 50;     // End of the street
+  const speed = 0.04; // Arrow speed
+  const streetStartZ = -400; // Starting position
+  const streetEndZ = 50; // End position
 
-  useFrame(() => {
+  // Closer initial camera position
+  const initialCameraPosition = { x: 0, y: 4, z: streetStartZ - 10 }; // Very close behind
+  const targetCameraPosition = { x: 0, y: 4, z: streetStartZ - 5 }; // Slightly closer behind the arrow
+
+  let smoothTransitionProgress = 0; // Smooth transition progress tracker (0 to 1)
+
+  useFrame((_, delta) => {
     if (arrowRef.current) {
-      const arrowSpeed = 0.04; // Speed of the arrow
+      const arrow = arrowRef.current;
 
       // Move the arrow forward along the Z-axis
-      if (arrowRef.current.position.z > streetEndZ) {
-        // Reset the arrow back to the start position
-        arrowRef.current.position.z = streetStartZ;
+      arrow.position.z += speed;
+      if (arrow.position.z > streetEndZ) arrow.position.z = streetStartZ;
+
+      // Fix the arrow's rotation to always face forward
+      arrow.rotation.set(0, Math.PI, 0);
+
+      // Smoothly transition the camera from very close behind to directly behind
+      if (smoothTransitionProgress < 1) {
+        smoothTransitionProgress += delta * 0.3; // Adjust transition speed
+        camera.position.lerpVectors(
+          initialCameraPosition,
+          { x: arrow.position.x, y: 4, z: arrow.position.z - 5 }, // Directly behind arrow
+          smoothTransitionProgress
+        );
       } else {
-        // Keep moving the arrow forward
-        arrowRef.current.position.z += arrowSpeed;
+        // Follow the arrow from behind after transition
+        camera.position.lerp(
+          { x: arrow.position.x, y: 4, z: arrow.position.z - 5 }, // Follow arrow
+          0.1
+        );
       }
 
-      // Adjust camera to follow the arrow closely
-      const { x, y, z } = arrowRef.current.position;
-      camera.position.lerp({ x, y: y + 4, z: z - 5 }, 0.1); // Keep the arrow closer to the camera
-      camera.lookAt(x, y, z); // Ensure the camera looks at the arrow
+      // Ensure the camera looks at the arrow at all times
+      camera.lookAt(arrow.position.x, arrow.position.y, arrow.position.z);
     }
   });
 
-  // Position the arrow closer to the camera at the start
-  return <primitive object={gltf.scene} ref={arrowRef} position={[0, 0, streetStartZ + 10]} rotation={[0, Math.PI, 0]} />;
+  return (
+    <primitive
+      object={gltf.scene}
+      ref={arrowRef}
+      position={[0, 0, streetStartZ + 10]} // Start closer to the camera
+      rotation={[0, Math.PI, 0]} // Ensure forward-facing at load
+    />
+  );
 };
 
 export default Arrow;
